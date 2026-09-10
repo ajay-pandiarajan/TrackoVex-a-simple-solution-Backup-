@@ -1,435 +1,579 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraTracker — Control Dashboard</title>
-    <style>
-        :root {
-            --bg-color: #050505;
-            --glass-bg: rgba(20, 20, 25, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.08);
-            --glass-shine: rgba(255, 255, 255, 0.03);
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
-            --accent-green: #10b981;
-            --accent-glow: rgba(16, 185, 129, 0.3);
-            --accent-blue: #3b82f6;
-            --danger: #ef4444;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>TrackoVex-a simple solution</title>
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            -webkit-font-smoothing: antialiased;
-        }
+  <!-- Leaflet CSS for Map View -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 40%);
-        }
+  <style>
+    /* ==========================================================================
+       1. GLOBAL & LIQUID GLASS SYSTEM
+       ========================================================================== */
+    :root {
+      --bg-gradient: linear-gradient(135deg, #1d2b64, #f8cdda, #12002b, #00d2ff);
+      --glass-bg: rgba(255, 255, 255, 0.45);
+      --glass-bg-dark: rgba(20, 20, 25, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.4);
+      --glass-border-dark: rgba(255, 255, 255, 0.12);
+      --glass-blur: blur(28px) saturate(210%);
+      --apple-green: #30d158;
+      --apple-blue: #0a84ff;
+      --apple-gray: #8e8e93;
+      --spring-easing: cubic-bezier(0.25, 1, 0.5, 1);
+    }
 
-        .container {
-            width: 100%;
-            max-width: 420px;
-            padding: 20px;
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", sans-serif;
+    }
 
-        /* Liquid Glass Card Effect */
-        .glass-card {
-            background: var(--glass-bg);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
-            border-radius: 28px;
-            padding: 28px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5),
-                        inset 0 1px 0 var(--glass-shine);
-            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
-        }
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      color: #fff;
+    }
 
-        .glass-card:hover {
-            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.6),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-        }
+    /* Ambient Liquid Mesh Gradient Background */
+    .mesh-bg {
+      position: absolute;
+      inset: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 50% 50%, #0a84ff 0%, transparent 50%),
+                  radial-gradient(circle at 20% 20%, #30d158 0%, transparent 40%),
+                  radial-gradient(circle at 80% 80%, #bf5af2 0%, transparent 40%);
+      opacity: 0.35;
+      filter: blur(80px);
+      animation: meshRotate 25s infinite linear;
+      z-index: 0;
+    }
 
-        /* Header Section */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
+    @keyframes meshRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
 
-        .title-group h1 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            letter-spacing: -0.025em;
-        }
+    /* ==========================================================================
+       2. TOP STATUS BAR & AIRTAG BATTERY ICON
+       ========================================================================== */
+    .top-bar {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      right: 16px;
+      height: 52px;
+      z-index: 100;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 1px solid var(--glass-border);
+      border-radius: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 18px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+      transition: all 0.5s var(--spring-easing);
+    }
 
-        .title-group p {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
+    .device-title-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
 
-        /* Status Pill */
-        .status-badge {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--glass-border);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
+    .device-name-input {
+      background: transparent;
+      border: none;
+      color: #000;
+      font-size: 17px;
+      font-weight: 600;
+      outline: none;
+      width: 140px;
+      text-overflow: ellipsis;
+      transition: color 0.3s ease;
+    }
 
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: var(--text-muted);
-            transition: background-color 0.3s, box-shadow 0.3s;
-        }
+    .device-name-input:focus {
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 6px;
+      padding: 2px 6px;
+    }
 
-        .status-badge.connected .status-dot {
-            background-color: var(--accent-green);
-            box-shadow: 0 0 10px var(--accent-glow);
-        }
+    .edit-icon {
+      opacity: 0.5;
+      width: 14px;
+      height: 14px;
+      fill: #000;
+    }
 
-        /* Telemetry Grid */
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-bottom: 24px;
-        }
+    /* AirTag-Styled Dynamic Battery Indicator */
+    .battery-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-        .metric-box {
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--glass-border);
-            border-radius: 18px;
-            padding: 16px;
-            transition: background 0.3s;
-        }
+    .battery-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1c1c1e;
+    }
 
-        .metric-box:hover {
-            background: rgba(255, 255, 255, 0.04);
-        }
+    .airtag-battery-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #d1d1d6 60%, #8e8e93 100%);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3), inset 0 0 2px rgba(255,255,255,0.8);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3px;
+    }
 
-        .metric-label {
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
+    .airtag-battery-fill {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: conic-gradient(var(--apple-green) var(--bat-deg, 0deg), rgba(0, 0, 0, 0.15) 0deg);
+      mask: radial-gradient(transparent 55%, black 56%);
+      -webkit-mask: radial-gradient(transparent 55%, black 56%);
+      transition: --bat-deg 0.8s var(--spring-easing);
+    }
 
-        .metric-value {
-            font-size: 1.35rem;
-            font-weight: 600;
-            letter-spacing: -0.02em;
-        }
+    .airtag-battery-core {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e5e5ea, #aeaeb2);
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.9);
+    }
 
-        .metric-sub {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
+    /* ==========================================================================
+       3. MAP VIEW STATE
+       ========================================================================== */
+    #map-view {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      transition: transform 0.6s var(--spring-easing), opacity 0.6s var(--spring-easing);
+    }
 
-        /* Signal Bar Meter */
-        .signal-meter {
-            display: flex;
-            align-items: flex-end;
-            gap: 3px;
-            height: 16px;
-            margin-top: 6px;
-        }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
 
-        .signal-bar {
-            width: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 2px;
-            transition: background 0.3s;
-        }
+    /* Bottom Glass Sheet */
+    .bottom-sheet {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border-top: 1px solid var(--glass-border);
+      border-top-left-radius: 36px;
+      border-top-right-radius: 36px;
+      padding: 12px 24px 34px 24px;
+      box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+      z-index: 10;
+      transform: translateY(0);
+      transition: transform 0.6s var(--spring-easing);
+    }
 
-        .signal-bar.active {
-            background: var(--accent-green);
-        }
+    .sheet-handle {
+      width: 36px;
+      height: 5px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 3px;
+      margin: 0 auto 16px auto;
+    }
 
-        /* Action Buttons */
-        .actions {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
+    .card-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 12px;
+    }
 
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 16px;
-            border: none;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-        }
+    .action-card {
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 22px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s ease, background 0.3s ease;
+    }
 
-        .btn-primary {
-            background: #f3f4f6;
-            color: #000;
-            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
-        }
+    .action-card:active {
+      transform: scale(0.96);
+    }
 
-        .btn-primary:hover {
-            background: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 25px rgba(255, 255, 255, 0.25);
-        }
+    .card-icon-wrapper {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--apple-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
 
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-main);
-            border: 1px solid var(--glass-border);
-        }
+    .card-icon-wrapper svg {
+      width: 22px;
+      height: 22px;
+      fill: white;
+    }
 
-        .btn-secondary:hover {
-            background: rgba(255, 255, 255, 0.09);
-            transform: translateY(-1px);
-        }
+    .card-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1c1c1e;
+    }
 
-        .btn-danger {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
+    /* Soundwave Animation for Active Buzzer */
+    .action-card.active-buzzer .card-icon-wrapper {
+      background: var(--apple-green);
+    }
 
-        .btn-danger:hover {
-            background: rgba(239, 68, 68, 0.2);
-        }
+    .pulse-ring {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid var(--apple-green);
+      opacity: 0;
+      pointer-events: none;
+    }
 
-        /* Hidden states */
-        .hidden {
-            display: none !important;
-        }
+    .action-card.active-buzzer .pulse-ring {
+      animation: soundPulse 1.5s infinite var(--spring-easing);
+    }
 
-        /* Smooth fade-in wrapper */
-        .fade-in {
-            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-        }
+    @keyframes soundPulse {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      100% { transform: scale(1.8); opacity: 0; }
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+    /* ==========================================================================
+       4. PRECISION FINDING VIEW STATE
+       ========================================================================== */
+    #precision-view {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 80px 24px 60px 24px;
+      opacity: 0;
+      pointer-events: none;
+      transform: scale(1.08);
+      transition: opacity 0.5s var(--spring-easing), transform 0.6s var(--spring-easing);
+    }
+
+    #precision-view.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    }
+
+    /* Directional Arrow Mechanics */
+    .arrow-container {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      position: relative;
+    }
+
+    .directional-arrow {
+      width: 220px;
+      height: 220px;
+      transition: transform 0.6s var(--spring-easing);
+      filter: drop-shadow(0 0 25px rgba(48, 209, 88, 0.4));
+    }
+
+    /* Distance & Status Text */
+    .distance-display {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .distance-value {
+      font-size: 76px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .distance-unit {
+      font-size: 32px;
+      font-weight: 500;
+      margin-left: 4px;
+      color: var(--apple-green);
+    }
+
+    .target-name {
+      font-size: 22px;
+      font-weight: 500;
+      color: var(--apple-gray);
+      margin-top: 8px;
+    }
+
+    /* Close Button Floating */
+    .close-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid var(--glass-border-dark);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+    }
+
+    .close-btn:active {
+      transform: scale(0.9);
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .close-btn svg {
+      width: 24px;
+      height: 24px;
+      fill: #fff;
+    }
+
+    /* Mode switching body adjustments */
+    body.precision-mode #map-view {
+      transform: translateY(30px) scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    body.precision-mode .top-bar {
+      background: var(--glass-bg-dark);
+      border-color: var(--glass-border-dark);
+    }
+
+    body.precision-mode .device-name-input {
+      color: #fff;
+    }
+
+    body.precision-mode .battery-text {
+      color: #fff;
+    }
+
+    body.precision-mode .edit-icon {
+      fill: #fff;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="glass-card fade-in">
-            
-            <!-- Header -->
-            <div class="header">
-                <div class="title-group">
-                    <h1>AuraTracker</h1>
-                    <p>ESP32 BLE Node</p>
-                </div>
-                <div id="statusBadge" class="status-badge">
-                    <div class="status-dot"></div>
-                    <span id="statusText">Disconnected</span>
-                </div>
-            </div>
+  <div class="mesh-bg"></div>
 
-            <!-- Telemetry Metrics -->
-            <div class="metrics-grid">
-                <!-- Distance Box -->
-                <div class="metric-box">
-                    <div class="metric-label">Proximity</div>
-                    <div id="distanceVal" class="metric-value">--</div>
-                    <div id="signalSub" class="metric-sub">Signal: -- dBm</div>
-                    <div class="signal-meter" id="signalMeter">
-                        <div class="signal-bar" style="height: 25%;"></div>
-                        <div class="signal-bar" style="height: 50%;"></div>
-                        <div class="signal-bar" style="height: 75%;"></div>
-                        <div class="signal-bar" style="height: 100%;"></div>
-                    </div>
-                </div>
+  <!-- Top Status Bar -->
+  <div class="top-bar">
+    <div class="device-title-container">
+      <input type="text" id="airtag-name-input" class="device-name-input" value="Alan's Keys" />
+      <svg class="edit-icon" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+    </div>
+    <div class="battery-container">
+      <span class="battery-text" id="battery-text">87%</span>
+      <div class="airtag-battery-icon">
+        <div class="airtag-battery-fill" id="battery-fill"></div>
+        <div class="airtag-battery-core"></div>
+      </div>
+    </div>
+  </div>
 
-                <!-- Battery Box -->
-                <div class="metric-box">
-                    <div class="metric-label">Battery</div>
-                    <div id="batteryVal" class="metric-value">--%</div>
-                    <div class="metric-sub" id="battVoltage">Voltage: --V</div>
-                </div>
-            </div>
-
-            <!-- Control Actions -->
-            <div class="actions">
-                <button id="connectBtn" class="btn btn-primary" onclick="toggleConnection()">
-                    Connect Tracker
-                </button>
-                
-                <button id="buzzBtn" class="btn btn-secondary hidden" onclick="toggleBuzzer()">
-                    🔊 Ring Buzzer
-                </button>
-
-                <button id="locateBtn" class="btn btn-secondary hidden" onclick="openMapLocation()">
-                    📍 View Last Location
-                </button>
-
-                <button id="disconnectBtn" class="btn btn-danger hidden" onclick="disconnectTracker()">
-                    Disconnect Device
-                </button>
-            </div>
-
+  <!-- Map View State -->
+  <div id="map-view">
+    <div id="map"></div>
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="card-grid">
+        <!-- Play Sound Card -->
+        <div class="action-card" id="btn-play-sound" onclick="toggleBuzzer()">
+          <div class="pulse-ring"></div>
+          <div class="card-icon-wrapper">
+            <svg viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+          </div>
+          <span class="card-title" id="sound-card-label">Play Sound</span>
         </div>
+
+        <!-- Find Nearby Card -->
+        <div class="action-card" onclick="openPrecisionView()">
+          <div class="card-icon-wrapper" style="background: var(--apple-green);">
+            <svg viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+          </div>
+          <span class="card-title">Find Nearby</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Precision Finding View State -->
+  <div id="precision-view">
+    <div class="arrow-container">
+      <svg class="directional-arrow" id="arrow" viewBox="0 0 100 100">
+        <path d="M50 5 L85 85 L50 70 L15 85 Z" fill="#30d158" />
+      </svg>
     </div>
 
-    <script>
-        // Web Bluetooth Mock / Functional State Engine
-        let isConnected = false;
-        let buzzerState = false;
-        let bluetoothDevice = null;
+    <div class="distance-display">
+      <div>
+        <span class="distance-value" id="dist-val">4.2</span>
+        <span class="distance-unit">ft</span>
+      </div>
+      <div class="target-name" id="precision-target-name">Alan's Keys</div>
+    </div>
 
-        const connectBtn = document.getElementById('connectBtn');
-        const disconnectBtn = document.getElementById('disconnectBtn');
-        const buzzBtn = document.getElementById('buzzBtn');
-        const locateBtn = document.getElementById('locateBtn');
-        const statusBadge = document.getElementById('statusBadge');
-        const statusText = document.getElementById('statusText');
-        const distanceVal = document.getElementById('distanceVal');
-        const signalSub = document.getElementById('signalSub');
-        const batteryVal = document.getElementById('batteryVal');
-        const battVoltage = document.getElementById('battVoltage');
-        const signalMeter = document.querySelectorAll('.signal-bar');
+    <div class="close-btn" onclick="closePrecisionView()">
+      <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+    </div>
+  </div>
 
-        async function toggleConnection() {
-            if (!isConnected) {
-                try {
-                    // Real Web Bluetooth Request (Works on Chrome / Android / Desktop with HTTPS)
-                    if (navigator.bluetooth) {
-                        connectBtn.innerText = "Scanning...";
-                        bluetoothDevice = await navigator.bluetooth.requestDevice({
-                            filters: [{ namePrefix: 'Aura' }, { services: ['battery_service'] }],
-                            optionalServices: ['generic_access']
-                        });
-                        
-                        // Handle disconnect events
-                        bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
-                    } else {
-                        alert("Web Bluetooth API is not available on this browser. Running in Simulation Mode.");
-                    }
+  <!-- Leaflet Map JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-                    // Simulate successful connection handshake
-                    simulateConnectionSuccess();
+  <script>
+    /* ==========================================================================
+       ESP32 HARDWARE MODULAR HOOKS
+       ========================================================================== */
+    let CURRENT_LAT = 37.774929;
+    let CURRENT_LON = -122.419416;
+    let BATTERY_PERC = 87;
+    let IS_BUZZER_ON = false;
+    let AIRTAG_NAME = "Alan's Keys";
+    let CURRENT_HEAVY_BEARING = 45; // Degrees
 
-                } catch (error) {
-                    console.log("Bluetooth connection cancelled or failed:", error);
-                    connectBtn.innerText = "Connect Tracker";
-                    // Fallback to simulation for easy local testing if user cancels browser prompt
-                    simulateConnectionSuccess();
-                }
-            }
-        }
+    let map, marker;
 
-        function simulateConnectionSuccess() {
-            isConnected = true;
-            statusBadge.classList.add('connected');
-            statusText.innerText = "Connected";
-            
-            connectBtn.classList.add('hidden');
-            buzzBtn.classList.remove('hidden');
-            locateBtn.classList.remove('hidden');
-            disconnectBtn.classList.remove('hidden');
+    // Initializer
+    window.addEventListener('DOMContentLoaded', () => {
+      initMap();
+      updateBatteryUI(BATTERY_PERC);
+      setupNameSync();
+    });
 
-            // Set mock/live values
-            batteryVal.innerText = "88%";
-            battVoltage.innerText = "Voltage: 3.12V";
-            distanceVal.innerText = "1.8 m";
-            signalSub.innerText = "Signal: -58 dBm";
-            updateSignalBars(-58);
-        }
+    /* Map Initialization */
+    function initMap() {
+      map = L.map('map', { zoomControl: false }).setView([CURRENT_LAT, CURRENT_LON], 16);
+      
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+      }).addTo(map);
 
-        function disconnectTracker() {
-            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
-                bluetoothDevice.gatt.disconnect();
-            }
-            onDisconnected();
-        }
+      const customIcon = L.divIcon({
+        className: 'custom-map-pin',
+        html: `<div style="width:24px;height:24px;background:#0a84ff;border:3px solid #fff;border-radius:50%;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>`,
+        iconSize: [24, 24]
+      });
 
-        function onDisconnected() {
-            isConnected = false;
-            statusBadge.classList.remove('connected');
-            statusText.innerText = "Disconnected";
+      marker = L.marker([CURRENT_LAT, CURRENT_LON], { icon: customIcon }).addTo(map);
+    }
 
-            connectBtn.innerText = "Connect Tracker";
-            connectBtn.classList.remove('hidden');
-            buzzBtn.classList.add('hidden');
-            locateBtn.classList.add('hidden');
-            disconnectBtn.classList.add('hidden');
+    /* Live Data Hooks & API Callbacks */
+    function updateTelemetry(lat, lon, battery, bearing) {
+      CURRENT_LAT = lat;
+      CURRENT_LON = lon;
+      BATTERY_PERC = battery;
+      CURRENT_HEAVY_BEARING = bearing;
 
-            distanceVal.innerText = "--";
-            signalSub.innerText = "Signal: -- dBm";
-            batteryVal.innerText = "--%";
-            battVoltage.innerText = "Voltage: --V";
-            resetSignalBars();
-        }
+      // Update Map
+      if (map && marker) {
+        const newPos = new L.LatLng(lat, lon);
+        marker.setLatLng(newPos);
+        map.panTo(newPos);
+      }
 
-        function toggleBuzzer() {
-            buzzerState = !buzzerState;
-            if (buzzerState) {
-                buzzBtn.style.background = "rgba(16, 185, 129, 0.15)";
-                buzzBtn.style.color = "var(--accent-green)";
-                buzzBtn.style.borderColor = "rgba(16, 185, 129, 0.3)";
-                buzzBtn.innerHTML = "🔕 Stop Buzzer";
-                // TODO: Send BLE write command to ESP32 characteristic here
-            } else {
-                buzzBtn.style.background = "";
-                buzzBtn.style.color = "";
-                buzzBtn.style.borderColor = "";
-                buzzBtn.innerHTML = "🔊 Ring Buzzer";
-            }
-        }
+      // Update Arrow Rotation & Battery
+      document.getElementById('arrow').style.transform = `rotate(${bearing}deg)`;
+      updateBatteryUI(battery);
+    }
 
-        function openMapLocation() {
-            alert("Opening last-known crowdsourced coordinates from server database: Kozhikode, KL (11.2588° N, 75.7804° E)");
-        }
+    /* Battery Circular Indicator Processing */
+    function updateBatteryUI(percentage) {
+      document.getElementById('battery-text').innerText = `${percentage}%`;
+      const deg = (percentage / 100) * 360;
+      document.getElementById('battery-fill').style.setProperty('--bat-deg', `${deg}deg`);
+    }
 
-        function updateSignalBars(rssi) {
-            let activeCount = 1;
-            if (rssi > -70) activeCount = 4;
-            else if (rssi > -80) activeCount = 3;
-            else if (rssi > -90) activeCount = 2;
+    /* Custom Name Synchronizer */
+    function setupNameSync() {
+      const input = document.getElementById('airtag-name-input');
+      const precisionText = document.getElementById('precision-target-name');
 
-            signalMeter.forEach((bar, index) => {
-                if (index < activeCount) {
-                    bar.classList.add('active');
-                } else {
-                    bar.classList.remove('active');
-                }
-            });
-        }
+      input.addEventListener('input', (e) => {
+        AIRTAG_NAME = e.target.value;
+        precisionText.innerText = AIRTAG_NAME;
+      });
+    }
 
-        function resetSignalBars() {
-            signalMeter.forEach(bar => bar.classList.remove('active'));
-        }
-    </script>
+    /* Interactive Buzzer Toggle */
+    function toggleBuzzer() {
+      IS_BUZZER_ON = !IS_BUZZER_ON;
+      const card = document.getElementById('btn-play-sound');
+      const label = document.getElementById('sound-card-label');
+
+      if (IS_BUZZER_ON) {
+        card.classList.add('active-buzzer');
+        label.innerText = "Stop Sound";
+        triggerBuzzerHardware(true);
+      } else {
+        card.classList.remove('active-buzzer');
+        label.innerText = "Play Sound";
+        triggerBuzzerHardware(false);
+      }
+    }
+
+    function triggerBuzzerHardware(state) {
+      console.log(`[ESP32 Hook] Fetch sent to ESP32: triggerBuzzer(${state})`);
+      // Hardware fetch implementation:
+      // fetch(`http://<ESP32_IP>/api/buzzer?state=${state}`).catch(err => console.error(err));
+    }
+
+    /* View State Mechanics */
+    function openPrecisionView() {
+      document.body.classList.add('precision-mode');
+      document.getElementById('precision-view').classList.add('active');
+    }
+
+    function closePrecisionView() {
+      document.body.classList.remove('precision-mode');
+      document.getElementById('precision-view').classList.remove('active');
+    }
+  </script>
 </body>
 </html>
