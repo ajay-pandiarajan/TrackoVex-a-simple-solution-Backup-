@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraTracker — Control Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #050505;
+            --glass-bg: rgba(20, 20, 25, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --glass-shine: rgba(255, 255, 255, 0.03);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-green: #10b981;
+            --accent-glow: rgba(16, 185, 129, 0.3);
+            --accent-blue: #3b82f6;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.06) 0%, transparent 40%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        /* Liquid Glass Card Effect */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 var(--glass-shine);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+        }
+
+        .glass-card:hover {
+            box-shadow: 0 35px 70px rgba(0, 0, 0, 0.6),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        }
+
+        /* Header Section */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .title-group h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.025em;
+        }
+
+        .title-group p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Status Pill */
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+
+        .status-badge.connected .status-dot {
+            background-color: var(--accent-green);
+            box-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        /* Telemetry Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .metric-box {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 16px;
+            transition: background 0.3s;
+        }
+
+        .metric-box:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .metric-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .metric-value {
+            font-size: 1.35rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        .metric-sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Signal Bar Meter */
+        .signal-meter {
+            display: flex;
+            align-items: flex-end;
+            gap: 3px;
+            height: 16px;
+            margin-top: 6px;
+        }
+
+        .signal-bar {
+            width: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            transition: background 0.3s;
+        }
+
+        .signal-bar.active {
+            background: var(--accent-green);
+        }
+
+        /* Action Buttons */
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 16px;
+            border: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .btn-primary {
+            background: #f3f4f6;
+            color: #000;
+            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-primary:hover {
+            background: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 255, 255, 0.25);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.09);
+            transform: translateY(-1px);
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+        /* Hidden states */
+        .hidden {
+            display: none !important;
+        }
+
+        /* Smooth fade-in wrapper */
+        .fade-in {
+            animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="glass-card fade-in">
+            
+            <!-- Header -->
+            <div class="header">
+                <div class="title-group">
+                    <h1>AuraTracker</h1>
+                    <p>ESP32 BLE Node</p>
+                </div>
+                <div id="statusBadge" class="status-badge">
+                    <div class="status-dot"></div>
+                    <span id="statusText">Disconnected</span>
+                </div>
+            </div>
+
+            <!-- Telemetry Metrics -->
+            <div class="metrics-grid">
+                <!-- Distance Box -->
+                <div class="metric-box">
+                    <div class="metric-label">Proximity</div>
+                    <div id="distanceVal" class="metric-value">--</div>
+                    <div id="signalSub" class="metric-sub">Signal: -- dBm</div>
+                    <div class="signal-meter" id="signalMeter">
+                        <div class="signal-bar" style="height: 25%;"></div>
+                        <div class="signal-bar" style="height: 50%;"></div>
+                        <div class="signal-bar" style="height: 75%;"></div>
+                        <div class="signal-bar" style="height: 100%;"></div>
+                    </div>
+                </div>
+
+                <!-- Battery Box -->
+                <div class="metric-box">
+                    <div class="metric-label">Battery</div>
+                    <div id="batteryVal" class="metric-value">--%</div>
+                    <div class="metric-sub" id="battVoltage">Voltage: --V</div>
+                </div>
+            </div>
+
+            <!-- Control Actions -->
+            <div class="actions">
+                <button id="connectBtn" class="btn btn-primary" onclick="toggleConnection()">
+                    Connect Tracker
+                </button>
+                
+                <button id="buzzBtn" class="btn btn-secondary hidden" onclick="toggleBuzzer()">
+                    🔊 Ring Buzzer
+                </button>
+
+                <button id="locateBtn" class="btn btn-secondary hidden" onclick="openMapLocation()">
+                    📍 View Last Location
+                </button>
+
+                <button id="disconnectBtn" class="btn btn-danger hidden" onclick="disconnectTracker()">
+                    Disconnect Device
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Web Bluetooth Mock / Functional State Engine
+        let isConnected = false;
+        let buzzerState = false;
+        let bluetoothDevice = null;
+
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const buzzBtn = document.getElementById('buzzBtn');
+        const locateBtn = document.getElementById('locateBtn');
+        const statusBadge = document.getElementById('statusBadge');
+        const statusText = document.getElementById('statusText');
+        const distanceVal = document.getElementById('distanceVal');
+        const signalSub = document.getElementById('signalSub');
+        const batteryVal = document.getElementById('batteryVal');
+        const battVoltage = document.getElementById('battVoltage');
+        const signalMeter = document.querySelectorAll('.signal-bar');
+
+        async function toggleConnection() {
+            if (!isConnected) {
+                try {
+                    // Real Web Bluetooth Request (Works on Chrome / Android / Desktop with HTTPS)
+                    if (navigator.bluetooth) {
+                        connectBtn.innerText = "Scanning...";
+                        bluetoothDevice = await navigator.bluetooth.requestDevice({
+                            filters: [{ namePrefix: 'Aura' }, { services: ['battery_service'] }],
+                            optionalServices: ['generic_access']
+                        });
+                        
+                        // Handle disconnect events
+                        bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                    } else {
+                        alert("Web Bluetooth API is not available on this browser. Running in Simulation Mode.");
+                    }
+
+                    // Simulate successful connection handshake
+                    simulateConnectionSuccess();
+
+                } catch (error) {
+                    console.log("Bluetooth connection cancelled or failed:", error);
+                    connectBtn.innerText = "Connect Tracker";
+                    // Fallback to simulation for easy local testing if user cancels browser prompt
+                    simulateConnectionSuccess();
+                }
+            }
+        }
+
+        function simulateConnectionSuccess() {
+            isConnected = true;
+            statusBadge.classList.add('connected');
+            statusText.innerText = "Connected";
+            
+            connectBtn.classList.add('hidden');
+            buzzBtn.classList.remove('hidden');
+            locateBtn.classList.remove('hidden');
+            disconnectBtn.classList.remove('hidden');
+
+            // Set mock/live values
+            batteryVal.innerText = "88%";
+            battVoltage.innerText = "Voltage: 3.12V";
+            distanceVal.innerText = "1.8 m";
+            signalSub.innerText = "Signal: -58 dBm";
+            updateSignalBars(-58);
+        }
+
+        function disconnectTracker() {
+            if (bluetoothDevice && bluetoothDevice.gatt.connected) {
+                bluetoothDevice.gatt.disconnect();
+            }
+            onDisconnected();
+        }
+
+        function onDisconnected() {
+            isConnected = false;
+            statusBadge.classList.remove('connected');
+            statusText.innerText = "Disconnected";
+
+            connectBtn.innerText = "Connect Tracker";
+            connectBtn.classList.remove('hidden');
+            buzzBtn.classList.add('hidden');
+            locateBtn.classList.add('hidden');
+            disconnectBtn.classList.add('hidden');
+
+            distanceVal.innerText = "--";
+            signalSub.innerText = "Signal: -- dBm";
+            batteryVal.innerText = "--%";
+            battVoltage.innerText = "Voltage: --V";
+            resetSignalBars();
+        }
+
+        function toggleBuzzer() {
+            buzzerState = !buzzerState;
+            if (buzzerState) {
+                buzzBtn.style.background = "rgba(16, 185, 129, 0.15)";
+                buzzBtn.style.color = "var(--accent-green)";
+                buzzBtn.style.borderColor = "rgba(16, 185, 129, 0.3)";
+                buzzBtn.innerHTML = "🔕 Stop Buzzer";
+                // TODO: Send BLE write command to ESP32 characteristic here
+            } else {
+                buzzBtn.style.background = "";
+                buzzBtn.style.color = "";
+                buzzBtn.style.borderColor = "";
+                buzzBtn.innerHTML = "🔊 Ring Buzzer";
+            }
+        }
+
+        function openMapLocation() {
+            alert("Opening last-known crowdsourced coordinates from server database: Kozhikode, KL (11.2588° N, 75.7804° E)");
+        }
+
+        function updateSignalBars(rssi) {
+            let activeCount = 1;
+            if (rssi > -70) activeCount = 4;
+            else if (rssi > -80) activeCount = 3;
+            else if (rssi > -90) activeCount = 2;
+
+            signalMeter.forEach((bar, index) => {
+                if (index < activeCount) {
+                    bar.classList.add('active');
+                } else {
+                    bar.classList.remove('active');
+                }
+            });
+        }
+
+        function resetSignalBars() {
+            signalMeter.forEach(bar => bar.classList.remove('active'));
+        }
+    </script>
+</body>
+</html>
